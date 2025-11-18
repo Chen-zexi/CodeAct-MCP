@@ -1,0 +1,7 @@
+{
+  "dependencies": ["."],
+  "graphs": {
+    "codeact-agent": "src/agent/agent.py:agent"
+  },
+  "env": ".env"
+}

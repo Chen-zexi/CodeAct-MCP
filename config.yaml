@@ -1,0 +1,110 @@
+# CodeAct MCP Configuration
+# This is the single source of truth for all configurable items
+# Credentials should be stored in .env file
+
+llm:
+  # Reference to LLM definition in llms.json
+  # Available LLMs: gpt-5.1-codex-mini, gemini-3-pro, claude-sonnet-4-5
+  name: "claude-sonnet-4-5"
+
+daytona:
+  # Daytona sandbox configuration
+  base_url: "https://app.daytona.io/api"
+  auto_stop_interval: 3600  # 1 hour in seconds
+  auto_archive_interval: 86400  # 24 hours in seconds
+  auto_delete_interval: 604800  # 7 days in seconds
+  python_version: "3.12"
+
+  # Snapshot configuration for faster sandbox initialization (7x speedup)
+  # First build takes ~10-15 minutes, subsequent sandboxes take ~8 seconds
+  # Hash will be automatically appended based on dependencies
+  snapshot_enabled: true  # Recommended: Enable snapshot-based sandbox creation
+  snapshot_name: "codeact-mcp-v2"  # Base name for snapshot (hash will be appended) - v2 includes ripgrep
+  snapshot_auto_create: true  # Automatically create snapshot if it doesn't exist
+
+security:
+  # Execution limits and validation
+  max_execution_time: 300  # seconds
+  max_code_length: 10000  # characters
+  max_file_size: 10485760  # 10MB
+
+  # Code validation
+  enable_code_validation: true
+
+  # Allowed Python imports for code validation
+  allowed_imports:
+    - os
+    - sys
+    - json
+    - yaml
+    - requests
+    - datetime
+    - pathlib
+    - typing
+    - re
+    - math
+    - random
+    - time
+    - collections
+    - itertools
+    - functools
+    - subprocess
+    - shutil
+
+  # Blocked code patterns for security
+  blocked_patterns:
+    - "eval("
+    - "exec("
+    - "__import__"
+    - "compile("
+    - "globals("
+    - "locals("
+
+mcp:
+  # MCP server configurations
+  # Note: Filesystem is now a first-class tool (see filesystem section below)
+  servers:
+    - name: "tavily"
+      description: "Web search engine for finding current information online"
+      instruction: "Use for web searches, news, research, and real-time information. Best for queries requiring up-to-date data from the internet."
+      tool_exposure_mode: "summary"  # Brief - 4 simple tools
+      transport: "stdio"
+      command: "npx"
+      args: ["-y", "tavily-mcp@latest"]
+      env:
+        TAVILY_API_KEY: "${TAVILY_API_KEY}"
+
+    - name: "alphavantage"
+      description: "Financial market data API for stocks, forex, crypto, and economic indicators"
+      instruction: "Use for stock quotes, historical prices, technical indicators, forex rates, crypto data, and economic data."
+      tool_exposure_mode: "summary"  # Full signatures - 118 complex tools
+      transport: "http"
+      url: "https://mcp.alphavantage.co/mcp?apikey=${ALPHA_VANTAGE_API_KEY}"
+
+    - name: "tickertick"
+      description: "Financial news API for ticker news, curated news, and entity news from Tickertick"
+      instruction: "Use for getting financial news about specific tickers, curated market news, news from specific sources, or news about entities like people and companies."
+      tool_exposure_mode: "summary"  # 7 news-related tools
+      transport: "stdio"
+      command: "uv"
+      args: ["run", "python", "mcp_servers/tickertick_mcp_server.py"]
+      env: {}
+
+  # Tool discovery settings
+  tool_discovery_enabled: true
+  lazy_load: true  # Load tools on-demand
+  cache_duration: 300  # Cache tool metadata for 5 minutes
+
+filesystem:
+  # Filesystem access configuration for first-class filesystem tools
+  # These tools provide direct file and directory operations without code generation
+  allowed_directories:
+    - "/home/daytona"
+    - "/tmp"
+  enable_path_validation: true  # Validate paths against allowed_directories
+
+logging:
+  # Logging configuration
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  format: "json"  # json or text
+  file: "logs/codeact.log"

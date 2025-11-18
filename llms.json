@@ -1,0 +1,42 @@
+{
+  "llms": {
+    "gpt-5.1-codex-mini": {
+      "model_id": "gpt-5.1-codex-mini",
+      "provider": "openai",
+      "sdk": "langchain_openai.ChatOpenAI",
+      "api_key_env": "OPENAI_API_KEY",
+      "output_version": "responses/v1",
+      "use_previous_response_id": true
+    },
+    "minimax": {
+      "model_id": "minimax-m2",
+      "provider": "anthropic",
+      "sdk": "langchain_anthropic.ChatAnthropic",
+      "api_key_env": "MINIMAX_API_KEY",
+      "base_url": "https://api.minimax.io/anthropic"
+    },
+    "claude-sonnet-4-5": {
+      "model_id": "claude-sonnet-4-5-20250929",
+      "provider": "anthropic",
+      "sdk": "langchain_anthropic.ChatAnthropic",
+      "api_key_env": "ANTHROPIC_API_KEY"
+    },
+    "deepseek-chat": {
+      "model_id": "deepseek-chat",
+      "provider": "openai",
+      "sdk": "langchain_openai.ChatOpenAI",
+      "api_key_env": "DEEPSEEK_API_KEY",
+      "base_url": "https://api.deepseek.com",
+      "parameters": {
+        "temperature": 0.1,
+        "max_tokens": 4096
+      }
+    },
+    "gemini-3-pro": {
+      "model_id": "gemini-3-pro-preview",
+      "provider": "google",
+      "sdk": "langchain-google-genai.ChatGoogleGenerativeAI",
+      "api_key_env": "GOOGLE_API_KEY"
+    }
+  }
+}
