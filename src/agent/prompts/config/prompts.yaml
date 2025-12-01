@@ -5,7 +5,6 @@ defaults:
   # Runtime variables (set at render time, these are just documentation)
   # NOTE: date/datetime are auto-injected by PromptLoader - do NOT set here
   tool_summary: ""  # Set at runtime with formatted tool summary
-  mcp_tool_summary: ""  # Set at runtime for general agent
   storage_enabled: false  # Set at runtime based on storage config
 
   # Task workflow defaults
@@ -18,7 +17,6 @@ defaults:
   # Component defaults
   include_examples: true
   include_anti_patterns: true
-  include_discovery: true
   include_file_guidelines: false
   detailed: false
   for_task_workflow: false
@@ -28,12 +26,11 @@ system:
   description: Main system prompt for task coordination and sub-agent delegation
   template: system.md.j2
   components:
-    - search_first
+    - tool_discovery
     - workspace_paths
     - output_guidelines
     - citation_rules
-    - mcp_usage
-    - data_persistence
+    - data_processing
     - image_upload  # conditional on storage_enabled
 
 # Sub-agent template metadata (for documentation)
@@ -49,12 +46,14 @@ subagents:
     template: subagents/general.md.j2
     required_vars:
       - date
-      - mcp_tool_summary
+      - tool_summary
 
 # Component template metadata
 components:
-  search_first:
-    description: Search-first principle guidance
+  tool_discovery:
+    description: Tool discovery, MCP usage, and search-first principle guidance
+    required_vars:
+      - tool_summary
     optional_vars:
       - include_examples
       - include_anti_patterns
@@ -63,13 +62,6 @@ components:
     description: Image auto-upload instructions
     optional_vars:
       - detailed
-
-  mcp_usage:
-    description: MCP tool usage instructions
-    required_vars:
-      - tool_summary
-    optional_vars:
-      - include_discovery
 
   output_guidelines:
     description: Output formatting guidelines
@@ -81,3 +73,6 @@ components:
 
   workspace_paths:
     description: Workspace directory structure and path conventions
+
+  data_processing:
+    description: Data processing patterns - inspection, statistics, search, and storage strategies

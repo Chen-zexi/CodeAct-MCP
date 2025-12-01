@@ -121,15 +121,10 @@ def _format_tool_summary_per_server(
 
     summary = "\n".join(lines)
 
-    # Add important guidance about checking tool signatures
-    guidance = """
+    # Brief reminder to check docs for signatures
+    note = "\n\n**Note**: Check `tools/docs/{server_name}/{tool_name}.md` for exact function signatures before use."
 
-IMPORTANT: Before using any MCP tool, you MUST check the exact function signature:
-1. Read the tool module: Read tools/{server_name}.py to see function signatures
-2. Check tool documentation: Read tools/docs/{server_name}/*.md for details
-3. Verify parameters: Ensure you pass correct types and required arguments"""
-
-    return f"{summary}{guidance}"
+    return f"{summary}{note}"
 
 
 def _format_server_brief(server_name: str, tools: list, config: Any) -> list:
@@ -270,15 +265,10 @@ def _format_tool_summary_brief(
 
     summary = "\n".join(lines)
 
-    # Add important guidance about checking tool signatures
-    guidance = """
+    # Brief reminder to check docs for signatures
+    note = "\n\n**Note**: Check `tools/docs/{server_name}/{tool_name}.md` for exact function signatures before use."
 
-IMPORTANT: Before using any MCP tool, you MUST check the exact function signature:
-1. Read the tool module: Read tools/{server_name}.py to see function signatures
-2. Check tool documentation: Read tools/docs/{server_name}/*.md for details
-3. Verify parameters: Ensure you pass correct types and required arguments"""
-
-    return f"{summary}{guidance}"
+    return f"{summary}{note}"
 
 
 def _format_tool_summary_detailed(
@@ -347,5 +337,48 @@ def _format_tool_summary_detailed(
 
     if not lines:
         return "\nNo MCP servers configured."
+
+    return "\n".join(lines)
+
+
+def format_subagent_summary(subagents: list[dict]) -> str:
+    """Format subagent configurations into a summary for the system prompt.
+
+    Similar to format_tool_summary for MCP tools. Displays each subagent
+    with its name, description, and available tools.
+
+    Args:
+        subagents: List of subagent config dicts with keys:
+            - name: Subagent name (e.g., "general-purpose", "research")
+            - description: What the subagent does
+            - tools: List of tool objects or tool names
+
+    Returns:
+        Formatted string for the system prompt
+    """
+    if not subagents:
+        return "No sub-agents configured."
+
+    lines = []
+
+    for subagent in subagents:
+        name = subagent.get("name", "unknown")
+        description = subagent.get("description", "")
+        tools = subagent.get("tools", [])
+
+        # Format tool names
+        tool_names = []
+        for tool in tools:
+            if hasattr(tool, "name"):
+                tool_names.append(tool.name)
+            elif isinstance(tool, str):
+                tool_names.append(tool)
+            else:
+                tool_names.append(str(tool))
+
+        # Build subagent entry
+        lines.append(f"- **{name}**: {description}")
+        if tool_names:
+            lines.append(f"  Tools: {', '.join(tool_names)}")
 
     return "\n".join(lines)

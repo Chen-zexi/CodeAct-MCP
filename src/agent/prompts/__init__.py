@@ -25,6 +25,7 @@ Usage:
 
 from .formatter import (
     build_mcp_section,
+    format_subagent_summary,
     format_tool_summary,
 )
 from .loader import (
@@ -42,5 +43,6 @@ __all__ = [
     "PromptLoader",
     # Formatter
     "format_tool_summary",
+    "format_subagent_summary",
     "build_mcp_section",
 ]
