@@ -63,9 +63,9 @@ class PlanModeMiddleware(AgentMiddleware):
                     "plan_description": description,
                     "messages": [
                         ToolMessage(
-                            content="Plan submitted for review.",
+                            content="Plan approved. Proceed with execution.",
                             tool_call_id=tool_call_id,
-                        )
+                        ),
                     ],
                 }
             )
@@ -100,35 +100,6 @@ def format_plan_description(
     return args.get("description", "No description provided")
 
 
-def format_plan_response(
-    tool_call: ToolCall,
-    decision: dict,
-    state: AgentState,
-    runtime: Runtime,
-) -> str:
-    """Format the HITL decision as the tool result message.
-
-    This function is called by HumanInTheLoopMiddleware to generate
-    the tool result that the agent sees after user approval/rejection.
-
-    Args:
-        tool_call: The tool call that was interrupted
-        decision: The user's decision dict with 'type' and optional 'message'
-        state: Current agent state
-        runtime: LangGraph runtime
-
-    Returns:
-        Formatted response string for the tool result
-    """
-    decision_type = decision.get("type", "")
-    if decision_type == "approve":
-        return "Plan approved. Proceed with execution."
-    if decision_type == "reject":
-        feedback = decision.get("message", "No feedback provided")
-        return f"Plan rejected. User feedback: {feedback}"
-    return "Unknown decision"
-
-
 def create_plan_mode_interrupt_config() -> dict[str, InterruptOnConfig]:
     """Create the HITL interrupt configuration for plan mode.
 
@@ -137,9 +108,8 @@ def create_plan_mode_interrupt_config() -> dict[str, InterruptOnConfig]:
         Only includes 'submit_plan' which triggers approval.
     """
     return {
-        "submit_plan": InterruptOnConfig(  # type: ignore[typeddict-unknown-key]
+        "submit_plan": InterruptOnConfig(
             allowed_decisions=["approve", "reject"],
             description=format_plan_description,
-            response=format_plan_response,
         )
     }

@@ -37,7 +37,6 @@ _MESSAGE_TUPLE_SIZE = 2  # Expected size of message tuple
 # HITL (Human-in-the-Loop) support for plan mode
 try:
     from langchain.agents.middleware.human_in_the_loop import HITLRequest
-    from langchain_core.messages import HumanMessage
     from langgraph.types import Command
     from pydantic import TypeAdapter, ValidationError
 
@@ -47,7 +46,6 @@ except ImportError:
     HITL_AVAILABLE = False
     _HITL_REQUEST_ADAPTER = None
     Command = None  # type: ignore[misc, assignment]
-    HumanMessage = None  # type: ignore[misc, assignment]
 
 
 async def _prompt_for_plan_approval(action_request: dict) -> tuple[dict, str | None]:
@@ -493,12 +491,10 @@ async def execute_task(  # noqa: PLR0911
 
                 any_rejected = False
 
-                rejection_feedback: str | None = None
-
                 for interrupt_id, hitl_request in pending_interrupts.items():
                     # Check if auto-approve is enabled
                     if getattr(session_state, "auto_approve", False):
-                        # Auto-approve all actions (no message field - rely on injected HumanMessage)
+                        # Auto-approve all actions
                         decisions = [
                             {"type": "approve"}
                             for _ in hitl_request.get("action_requests", [])
@@ -510,32 +506,31 @@ async def execute_task(  # noqa: PLR0911
                         decisions = []
                         for action_request in hitl_request.get("action_requests", []):
                             decision, feedback = await _prompt_for_plan_approval(action_request)
-                            decisions.append(decision)
 
                             if decision.get("type") == "reject":
                                 any_rejected = True
-                                rejection_feedback = feedback
+                                # Put feedback in decision message for HITL to use in ToolMessage
+                                feedback_text = feedback or "No feedback provided"
+                                decision["message"] = f"<system-reminder>Your plan was rejected. User feedback: {feedback_text}. You MUST submit the revised plan for review using submit_plan before proceeding.</system-reminder>"
+
+                            decisions.append(decision)
 
                     hitl_response[interrupt_id] = {"decisions": decisions}
 
-                # Build decision message for agent
+                # Update spinner based on decision
                 if any_rejected:
                     console.print()
                     console.print(
                         "[yellow]Plan rejected. Agent will revise based on your feedback.[/yellow]"
                     )
-                    feedback_text = rejection_feedback or "No feedback provided"
-                    decision_msg = f"<system-reminder>Your plan was rejected. User feedback: {feedback_text}</system-reminder>"
                     state.update_spinner(f"[bold {COLORS['thinking']}]Revising plan...")
                 else:
-                    decision_msg = "<system-reminder>Your plan was approved. Proceed with execution.</system-reminder>"
                     state.update_spinner(f"[bold {COLORS['thinking']}]Executing plan...")
 
-                # Resume with decision and inject message so agent sees the outcome
-                stream_input = Command(
-                    resume=hitl_response,
-                    update={"messages": [HumanMessage(content=decision_msg)]},
-                )
+                # Resume with decision (no HumanMessage injection needed -
+                # approve: tool returns ToolMessage + HumanMessage
+                # reject: HITL creates ToolMessage with decision["message"])
+                stream_input = Command(resume=hitl_response)
                 state.start_spinner()
                 # Continue the while loop to resume streaming
             else:
